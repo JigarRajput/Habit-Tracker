@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:habit_tracker/widgets/habit_tracker_heat_map.dart';
 import 'package:provider/provider.dart';
 
 import '../../database/habit_database.dart';
@@ -20,7 +21,7 @@ class _HomePageState extends State<HomePage> {
   void createNewHabit() {
     showDialogBox(
         text: null,
-        onSave: () async {
+        onConfirm: () async {
           final habit = textController.text;
           context.read<HabitDatabase>().addHabit(habit);
           Navigator.of(context).pop();
@@ -34,18 +35,32 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  void handleDismiss(int id) => context.read<HabitDatabase>().deleteHabit(id);
+  void handleDelete(int id) {
+    showDialogBox(
+      onConfirm: () async {
+        context.read<HabitDatabase>().deleteHabit(id);
+        Navigator.of(context).pop();
+      },
+      isDelete: true,
+    );
+  }
 
-  void showDialogBox({String? text, void Function()? onSave}) {
+  void showDialogBox({
+    String? text,
+    void Function()? onConfirm,
+    bool isDelete = false,
+  }) {
     if (text != null) {
       textController.text = text;
     }
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        content: TextField(
-          controller: textController,
-        ),
+        content: !isDelete
+            ? TextField(
+                controller: textController,
+              )
+            : const Text("Are you sure you want to delete"),
         actions: [
           MaterialButton(
             onPressed: () {
@@ -55,18 +70,19 @@ class _HomePageState extends State<HomePage> {
             child: const Text("Cancel"),
           ),
           MaterialButton(
-            onPressed: onSave,
-            child: const Text("Save"),
+            onPressed: onConfirm,
+            child: Text(!isDelete ? "Save" : "Delete"),
           )
         ],
       ),
     );
+    textController.clear();
   }
 
   void handleEdit(Habit habit) {
     showDialogBox(
       text: habit.name,
-      onSave: () async {
+      onConfirm: () async {
         context.read<HabitDatabase>().updateHabitName(
               habit.id,
               textController.text,
@@ -101,17 +117,42 @@ class _HomePageState extends State<HomePage> {
           color: themeData.colorScheme.inversePrimary,
         ),
       ),
-      body: ListView.builder(
-        itemCount: habits.length,
-        itemBuilder: (context, index) => HabitTile(
-            key: Key(index.toString()),
-            title: habits[index].name,
-            isCompleted: isCompletedToday(habits[index].completedDays),
-            onChanged: (val) => checkHabit(habits[index], val),
-            index: index,
-            onDismiss: (_) => handleDismiss(habits[index].id),
-            onEdit: () => handleEdit(habits[index])),
+      body: ListView(
+        children: [
+          _buildHeatMap(),
+          ListView.builder(
+            shrinkWrap: true,
+            itemCount: habits.length,
+            itemBuilder: (context, index) => HabitTile(
+                key: Key(index.toString()),
+                title: habits[index].name,
+                isCompleted: isCompletedToday(habits[index].completedDays),
+                onChanged: (val) => checkHabit(habits[index], val),
+                index: index,
+                onDismiss: () => handleDelete(habits[index].id),
+                onEdit: () => handleEdit(habits[index])),
+          )
+        ],
       ),
     );
+  }
+
+  Widget _buildHeatMap() {
+    final habitdatabase = context.watch<HabitDatabase>();
+
+    final currentHabits = habitdatabase.currentHabits;
+
+    return FutureBuilder(
+        future: habitdatabase.getFirstLaunchDate(),
+        builder: (context, snapshot) {
+          if (snapshot.hasData) {
+            return HabitTrackerHeatMap(
+              startDate: snapshot.data!,
+              datasets: prepareHeatmapDataset(currentHabits),
+            );
+          } else {
+            return const Center(child: Text("No habits to show!"));
+          }
+        });
   }
 }

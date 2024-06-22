@@ -13,10 +13,25 @@ class HabitDrawer extends StatelessWidget {
     final themeProvider = Provider.of<ThemeProvider>(context);
     return Drawer(
       backgroundColor: themeData.colorScheme.background,
-      child: Center(
-        child: CupertinoSwitch(
-          value: themeProvider.isDarkMode,
-          onChanged: (_) => themeProvider.toggleTheme(),
+      child: SafeArea(
+        child: Align(
+          alignment: Alignment.bottomRight,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 15),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  "Dark mode",
+                  style: themeData.textTheme.bodyLarge,
+                ),
+                CupertinoSwitch(
+                  value: themeProvider.isDarkMode,
+                  onChanged: (_) => themeProvider.toggleTheme(),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
