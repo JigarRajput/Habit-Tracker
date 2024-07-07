@@ -50,15 +50,12 @@ class _HomePageState extends State<HomePage> {
     void Function()? onConfirm,
     bool isDelete = false,
   }) {
-    if (text != null) {
-      textController.text = text;
-    }
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         content: !isDelete
             ? TextField(
-                controller: textController,
+                controller: textController..text = text ?? '',
               )
             : const Text("Are you sure you want to delete"),
         actions: [
@@ -143,16 +140,17 @@ class _HomePageState extends State<HomePage> {
     final currentHabits = habitdatabase.currentHabits;
 
     return FutureBuilder(
-        future: habitdatabase.getFirstLaunchDate(),
-        builder: (context, snapshot) {
-          if (snapshot.hasData) {
-            return HabitTrackerHeatMap(
-              startDate: snapshot.data!,
-              datasets: prepareHeatmapDataset(currentHabits),
-            );
-          } else {
-            return const Center(child: Text("No habits to show!"));
-          }
-        });
+      future: habitdatabase.getFirstLaunchDate(),
+      builder: (context, snapshot) {
+        if (snapshot.hasData) {
+          return HabitTrackerHeatMap(
+            startDate: snapshot.data!,
+            datasets: prepareHeatmapDataset(currentHabits),
+          );
+        } else {
+          return const Center(child: Text("No habits to show!"));
+        }
+      },
+    );
   }
 }
